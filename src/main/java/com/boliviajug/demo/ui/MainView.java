@@ -1,9 +1,11 @@
-package com.boliviajug.demo;
+package com.boliviajug.demo.ui;
 
-import com.boliviajug.demo.Cliente;
-import com.boliviajug.demo.IClienteRepositorio;
+import com.boliviajug.demo.backend.modelo.Cliente;
+import com.boliviajug.demo.backend.modelo.TipoTarjeta;
+import com.boliviajug.demo.backend.repositorio.IClienteRepositorio;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -13,6 +15,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
@@ -37,7 +41,7 @@ public class MainView extends Composite<VerticalLayout> {
         this.repository=repository;
         initLayout();
         initBehavior();
-       // refresh();
+        refresh();
 
     }
 
@@ -62,12 +66,12 @@ public class MainView extends Composite<VerticalLayout> {
         grid.asSingleSelect().addValueChangeListener(e -> updateHeader());
         refresh.addClickListener(e -> refresh());
         add.addClickListener(e -> showAddDialog());
-       // edit.addClickListener(e -> showEditDialog());
+        edit.addClickListener(e -> showEditDialog());
     }
 
 
     public void refresh() {
-        grid.setItems((Cliente) repository.findAll());
+        grid.setItems(repository.findAll());
         updateHeader();
     }
 
@@ -76,23 +80,28 @@ public class MainView extends Composite<VerticalLayout> {
         UserFormDialog dialog = new UserFormDialog("Nuevo Cliente", new Cliente());
         dialog.open();
     }
-/*
+
     private void showEditDialog() {
         UserFormDialog dialog = new UserFormDialog("Actualizar Cliente", grid.asSingleSelect().getValue());
         dialog.open();
     }
-    */
+
 
     private class UserFormDialog extends Dialog {
 
         private TextField nombre = new TextField("Nombre Completo");
-       // private TextField nombre = new TextField("Nombre Completo");
+        private TextField direccion = new TextField("Direccion");
+        private TextField ciudad = new TextField("Ciudad");
+        private NumberField telefono = new NumberField("Telefono");
+        private EmailField email = new EmailField("Email");
+        private ComboBox<TipoTarjeta> tipoTarjeta = new ComboBox<>("Tipo Tarjeta");
         private Button cancel = new Button("Cancel");
         private Button save = new Button("Save", VaadinIcon.CHECK.create());
 
         public UserFormDialog(String caption, Cliente cliente) {
             initLayout(caption);
             initBehavior(cliente);
+            tipoTarjeta.setItems(TipoTarjeta.values());
         }
 
         private void initLayout(String caption) {
@@ -100,7 +109,7 @@ public class MainView extends Composite<VerticalLayout> {
             HorizontalLayout buttons = new HorizontalLayout(cancel, save);
             buttons.setSpacing(true);
             nombre.setRequiredIndicatorVisible(true);
-            FormLayout formLayout = new FormLayout(new H2(caption), nombre );
+            FormLayout formLayout = new FormLayout(new H2(caption), nombre, direccion, ciudad,telefono, email, tipoTarjeta );
             VerticalLayout layout = new VerticalLayout(formLayout, buttons);
             layout.setAlignSelf(FlexComponent.Alignment.END, buttons);
             add(layout);
@@ -115,9 +124,9 @@ public class MainView extends Composite<VerticalLayout> {
                 try {
                     binder.validate();
                     binder.writeBean(cliente);
-                    //repository.save(cliente);
+                    repository.save(cliente);
                     close();
-                   // refresh();
+                    refresh();
                     Notification.show("Customer saved");
                 } catch (ValidationException ex) {
                     Notification.show("Please fix the errors and try again");

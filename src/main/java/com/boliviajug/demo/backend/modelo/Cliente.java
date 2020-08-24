@@ -1,7 +1,5 @@
-package com.boliviajug.demo;
+package com.boliviajug.demo.backend.modelo;
 
-import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield.NumberField;
 import lombok.*;
 
 import javax.persistence.Entity;
@@ -31,10 +29,14 @@ public class Cliente {
     private String ciudad;
 
     @Getter @Setter
-    private NumberField telefono;
+    private Double telefono;
 
     @Getter @Setter
-    private EmailField email;
+    private String email;
+
+    @Getter @Setter
+    private TipoTarjeta tipoTarjeta;
+
 
 
 }

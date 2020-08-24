@@ -1,4 +1,4 @@
-package com.boliviajug.demo;
+package com.boliviajug.demo.backend.modelo;
 
 public enum TipoTarjeta {
     CORRIENTE, CREDITO
