@@ -1,32 +1,34 @@
 package com.boliviajug.demo.ui;
 
 import com.boliviajug.demo.backend.modelo.Cliente;
-import com.boliviajug.demo.backend.modelo.TipoTarjeta;
 import com.boliviajug.demo.backend.repositorio.IClienteRepositorio;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.*;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.PWA;
+import com.vaadin.flow.theme.Theme;
+import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 
 @Route("")
 @PWA(name = "BoliviaJug", shortName = "BoliviaJUG")
+//@Theme(value = Lumo.class, variant = Lumo.DARK)
 public class MainView extends Composite<VerticalLayout> {
 
     private Button refresh = new Button("", VaadinIcon.REFRESH.create());
@@ -47,8 +49,8 @@ public class MainView extends Composite<VerticalLayout> {
 
     private void initLayout() {
         HorizontalLayout header = new HorizontalLayout(refresh, add, edit);
-        grid.setColumns("id","nombre","direccion","ciudad","telefono","email");
-        //grid.addComponentColumn(user -> new Button("Delete", e -> deleteClicked(user)));
+        grid.setColumns("id","nombre","email","sueldo","fechaNacimiento");
+        grid.addComponentColumn(user -> new Button("Delete", e -> deleteClicked(user)));
         grid.setSizeFull();
         getContent().add(header, grid);
         getContent().expand(grid);
@@ -61,6 +63,17 @@ public class MainView extends Composite<VerticalLayout> {
         boolean selected = !grid.asSingleSelect().isEmpty();
         edit.setEnabled(selected);
     }
+
+    private void deleteClicked(Cliente cliente) {
+        showRemoveDialog(cliente);
+        refresh();
+    }
+
+    private void showRemoveDialog(Cliente cliente) {
+        RemoveDialog dialog = new RemoveDialog(cliente);
+        dialog.open();
+    }
+
 
     private void initBehavior() {
         grid.asSingleSelect().addValueChangeListener(e -> updateHeader());
@@ -90,18 +103,20 @@ public class MainView extends Composite<VerticalLayout> {
     private class UserFormDialog extends Dialog {
 
         private TextField nombre = new TextField("Nombre Completo");
-        private TextField direccion = new TextField("Direccion");
-        private TextField ciudad = new TextField("Ciudad");
-        private NumberField telefono = new NumberField("Telefono");
         private EmailField email = new EmailField("Email");
-        private ComboBox<TipoTarjeta> tipoTarjeta = new ComboBox<>("Tipo Tarjeta");
-        private Button cancel = new Button("Cancel");
-        private Button save = new Button("Save", VaadinIcon.CHECK.create());
+        private BigDecimalField sueldo = new BigDecimalField("Sueldo");
+        private DatePicker fechaNacimiento = new DatePicker("Fecha Nacimiento");
+        private PasswordField clave = new PasswordField("Clave");
+
+        private Button cancel = new Button("Cancelar");
+        private Button save = new Button("Guardar", VaadinIcon.CHECK.create());
 
         public UserFormDialog(String caption, Cliente cliente) {
             initLayout(caption);
             initBehavior(cliente);
-            tipoTarjeta.setItems(TipoTarjeta.values());
+            sueldo.addThemeVariants(TextFieldVariant.LUMO_ALIGN_RIGHT);
+            sueldo.setPrefixComponent(new Icon(VaadinIcon.DOLLAR));
+
         }
 
         private void initLayout(String caption) {
@@ -109,7 +124,7 @@ public class MainView extends Composite<VerticalLayout> {
             HorizontalLayout buttons = new HorizontalLayout(cancel, save);
             buttons.setSpacing(true);
             nombre.setRequiredIndicatorVisible(true);
-            FormLayout formLayout = new FormLayout(new H2(caption), nombre, direccion, ciudad,telefono, email, tipoTarjeta );
+            FormLayout formLayout = new FormLayout(new H2(caption), nombre, email, sueldo, fechaNacimiento, clave);
             VerticalLayout layout = new VerticalLayout(formLayout, buttons);
             layout.setAlignSelf(FlexComponent.Alignment.END, buttons);
             add(layout);
@@ -127,14 +142,41 @@ public class MainView extends Composite<VerticalLayout> {
                     repository.save(cliente);
                     close();
                     refresh();
-                    Notification.show("Customer saved");
+                    Notification.show("Cliente Guardado");
                 } catch (ValidationException ex) {
-                    Notification.show("Please fix the errors and try again");
+                    Notification.show("Error en el envio de datos");
                 }
             });
         }
 
     }
 
+    //Implementacion Operacion Eliminar
+    private class RemoveDialog extends Dialog {
+        private Button cancel = new Button("Cancelar");
+        private Button delete = new Button("Eliminar", VaadinIcon.TRASH.create());
 
+        public RemoveDialog(Cliente cliente) {
+            initLayout(cliente);
+            initBehavior(cliente);
+        }
+
+        private void initLayout(Cliente cliente) {
+            Span span = new Span("Do you really want to delete the user " + cliente.getNombre() +  "?");
+            delete.getElement().setAttribute("theme", "error");
+            HorizontalLayout buttons = new HorizontalLayout(cancel, delete);
+            VerticalLayout layout = new VerticalLayout(new H2("Confirm"), span, buttons);
+            layout.setAlignSelf(FlexComponent.Alignment.END, buttons);
+            add(layout);
+        }
+
+        private void initBehavior(Cliente cliente) {
+            cancel.addClickListener(e -> close());
+            delete.addClickListener(e -> {
+                repository.deleteById(cliente.getId());
+                refresh();
+                close();
+            });
+        }
+    }
 }
